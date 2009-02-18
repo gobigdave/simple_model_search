@@ -1,0 +1,52 @@
+SimpleModelSearch
+=================
+
+Adds search method to ActiveRecord::Base.
+
+The query language supports the operators (), not, and, or.
+
+Precedence in that order.
+- is an alias for not.
+If no operator is present, and is assumed. Lastly, anything within double quotes is treated as a single search term.
+
+For example,
+ ruby rails => records where both ruby and rails appear
+ "ruby on rails" => records where "ruby on rails" appears
+ ruby or rails => records where ruby or rails (or both) appears
+ ruby or chunky bacon => records where ruby appears or both chunky and bacon appear
+ not dead or alive => records where alive appears or dead is absent
+ -(ruby or rails) => records where neither ruby nor rails appears
+ (ruby or rails) -"ruby on rails" => records where ruby or rails appears but not the phrase "ruby on rails"
+
+Adds several methods to all model objects.
+
+def self.searches_on(*args)
+	Allow the user to set the default searchable fields.
+	By default, search will search all string and text fields. Use this to limit what is searched on.
+
+def self.search(text = nil, options = {})
+	Search the model's text and string fields
+	  text = a set of words to search for
+	  :only => an array of fields in which to search for the text;
+	    default is 'all text or string columns'
+	  :except => an array of fields to exclude
+	    from the default searchable columns
+	  :include => an array of tables to include in the joins.  Fields that
+	    have searchable text will automatically be included in the default
+	    set of :search_columns.
+	  :join_include => an array of tables to include in the joins, but only
+	    for joining. (Searchable fields will not automatically be included.)
+	  :conditions => a string of additional conditions (constraints)
+	  :order => sort order (order_by SQL snippet)
+	  :page => page desired. use 0 to return everything. Defaults to 1.
+
+	  returns WillPaginate::Collection
+
+Query feature by Nate McNamara (nate@mcnamara.net)
+Original TextSearch library by Duane Johnson.
+
+Example
+=======
+
+
+Copyright (c) 2009 Dave Dupre, released under the MIT license
