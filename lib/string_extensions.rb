@@ -1,5 +1,7 @@
 class String
 
+  ARTICLE_WORDS = %w(an of for the at how)
+  
   # Replace punctuation characters with space
   def strip_punctuation
     self.gsub(/[^a-zA-Z0-9\&\+\-\"\'\s]/, ' ').strip
