@@ -37,6 +37,7 @@ def self.search(text = nil, options = {})
 	  :join_include => an array of tables to include in the joins, but only
 	    for joining. (Searchable fields will not automatically be included.)
 	  :conditions => a string of additional conditions (constraints)
+	  :keywords => true if searches for keyword vs fragment. Default is false.
 	  :order => sort order (order_by SQL snippet)
 	  :page => page desired. use 0 to return everything. Defaults to 1.
 

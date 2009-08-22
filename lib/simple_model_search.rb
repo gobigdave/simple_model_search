@@ -69,6 +69,7 @@ module ActiveRecord
     #   :conditions => a string of additional conditions (constraints)
     #   :order => sort order (order_by SQL snippet)
     #   :page => page desired. use 0 to return everything. Defaults to 1.
+    #   :keywords => search by keyword instead of contains. Default is false.
     #
     #   returns WillPaginate::Collection
     #
@@ -76,6 +77,9 @@ module ActiveRecord
       
       # if no search criteria, then nothing to return
       return WillPaginate::Collection.new(1, self.per_page, 0) if text.blank? || text.length <= 1
+      
+      # Default the keywords search to false
+      keywords = options[:keywords] || false
       
       # Setup the search fields
       fields = searchable_fields(options[:include])
@@ -85,7 +89,7 @@ module ActiveRecord
       # build search_options
       condition_list = []
       unless text.nil?
-        condition_list << build_text_condition(fields, text)
+        condition_list << build_text_condition(fields, text, keywords)
       end
       if options[:conditions]
         condition_list << "#{options[:conditions]}"
@@ -97,7 +101,9 @@ module ActiveRecord
       search_options = { :include => includes.empty? ? nil : includes,
                          :conditions => conditions.empty? ? nil : conditions,
                          :order => options[:order],
-                         :per_page => options[:per_page] }
+                         :per_page => options[:per_page],
+                         :select => options[:select]
+                       }
                          
       # Do the search
       if page <= 0
@@ -114,8 +120,8 @@ module ActiveRecord
     end
 
     # Given a field or array of fields, return a sql string using text
-    def self.build_text_condition(fields, text)
-      build_tc_from_tree(fields, demorganize(parse(text.downcase.strip_punctuation)))
+    def self.build_text_condition(fields, text, keywords = false)
+      build_tc_from_tree(fields, demorganize(parse(text.downcase.strip_punctuation)), keywords)
     end
 
     private
@@ -321,31 +327,35 @@ module ActiveRecord
       s.gsub('%', '\%').gsub('_', '\_')
     end
 
-    def self.compound_tc(fields, tree)
+    def self.compound_tc(fields, tree, keywords)
       '(' +
-        build_tc_from_tree(fields, tree[1]) +
+        build_tc_from_tree(fields, tree[1], keywords) +
         ' ' + tree[0].to_s + ' ' +
-        build_tc_from_tree(fields, tree[2]) +
+        build_tc_from_tree(fields, tree[2], keywords) +
       ')'
     end
 
-    def self.build_tc_from_tree(fields, tree)
+    def self.build_tc_from_tree(fields, tree, keywords)
       token = tree.kind_of?(Array)? tree[0] : tree
       case token
       when :and
-        compound_tc(fields, tree)
+        compound_tc(fields, tree, keywords)
       when :or
-        compound_tc(fields, tree)
+        compound_tc(fields, tree, keywords)
       when :not
         # assert tree[1].kind_of?(String)
-        "(" +
-        fields.map { |f| "(#{f} is null or #{f} not like #{sanitize('%'+sql_escape(tree[1])+'%')})" }.join(" and ") +
-        ")"
+        op, l, r = get_ops(keywords)
+        expression = fields.map { |f| "(#{f} IS NULL OR #{f} NOT #{op} #{sanitize(l+sql_escape(tree[1])+r)})" }.join(" AND ")
+        "(#{expression})"
       else
-        "(" +
-        fields.map { |f| "#{f} like #{sanitize('%'+sql_escape(token)+'%')}" }.join(" or ") +
-        ")"
+        op, l, r = get_ops(keywords)
+        expression = fields.map { |f| "#{f} #{op} #{sanitize(l+sql_escape(token)+r)}" }.join(" OR ")
+        "(#{expression})"
       end
+    end
+
+    def self.get_ops(keywords)
+      return (keywords) ? ['REGEXP', '[[:<:]]', '[[:>:]]'] : ['LIKE', '%', '%']
     end
 
   end
