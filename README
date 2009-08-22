@@ -24,7 +24,7 @@ def self.searches_on(*args)
 	Allow the user to set the default searchable fields.
 	By default, search will search all string and text fields. Use this to limit what is searched on.
 
-def self.search(text = nil, options = {})
+def self.simple_search(text = nil, options = {})
 	Search the model's text and string fields
 	  text = a set of words to search for
 	  :only => an array of fields in which to search for the text;

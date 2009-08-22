@@ -73,7 +73,7 @@ module ActiveRecord
     #
     #   returns WillPaginate::Collection
     #
-    def self.search(text = nil, options = {})
+    def self.simple_search(text = nil, options = {})
       
       # if no search criteria, then nothing to return
       return WillPaginate::Collection.new(1, self.per_page, 0) if text.blank? || text.length <= 1
@@ -360,4 +360,3 @@ module ActiveRecord
 
   end
 end
-
